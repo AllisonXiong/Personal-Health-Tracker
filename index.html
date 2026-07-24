@@ -1,94 +1,84 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Health Dashboard</title>
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health Dashboard V2</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f5f7f2;margin:0;padding:20px;color:#333}
-.card{background:#fff;border-radius:12px;padding:16px;margin:12px auto;max-width:720px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-h1,h2{margin:.2em 0}
-label{display:block;padding:6px 0}
-progress{width:100%;height:18px}
-button{padding:10px 18px;border:0;border-radius:8px;background:#6fa36b;color:#fff;font-size:16px;cursor:pointer}
+body{font-family:system-ui;background:#f3f6f1;margin:20px}
+.card{background:#fff;border-radius:12px;padding:16px;max-width:900px;margin:12px auto;box-shadow:0 2px 8px #0001}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{border:1px solid #ddd;border-radius:8px;padding:6px;min-height:54px;font-size:12px}
+.low{background:#ffd9d9}.mid{background:#fff2b3}.high{background:#dff7d8}
+label{display:block;margin:4px 0}
+select{padding:6px}
 </style>
-</head>
 <body>
 <div class="card">
-<h1>🌿 每日健康打卡</h1>
-<div id="date"></div>
-<p>完成率：<span id="pct">0%</span></p>
-<progress id="prog" max="100" value="0"></progress>
+<h2>🌿 Health Dashboard V2</h2>
+<div id="today"></div>
+<label>今日运动：
+<select id="sport">
+<option>无</option><option>💪 力量</option><option>🩰 普拉提</option><option>❤️ 有氧</option>
+<option>🥊 拳击</option><option>🥾 徒步</option><option>🏃 跑步</option>
+<option>🚴 骑行</option><option>🏊 游泳</option><option>🧘 恢复</option>
+</select></label>
+<h3>今日打卡</h3>
+<div id="tasks"></div>
+<p>完成率：<b id="rate">0%</b></p>
 </div>
 
 <div class="card">
-<h2>😴 睡眠</h2>
-<label><input class="task" type="checkbox"> 睡眠7.5小时+</label>
-<label><input class="task" type="checkbox"> 00:30前睡</label>
+<h3>📅 本月日历（演示版）</h3>
+<div class="grid" id="cal"></div>
 </div>
 
 <div class="card">
-<h2>🍳 早餐</h2>
-<label><input class="task" type="checkbox"> 两个水煮蛋</label>
-<label><input class="task" type="checkbox"> 牛奶/酸奶</label>
-<label><input class="task" type="checkbox"> 水果</label>
-</div>
-
-<div class="card">
-<h2>🧘 小活动</h2>
-<label><input class="task" type="checkbox"> 早晨拉伸</label>
-<label><input class="task" type="checkbox"> 视频练习</label>
-</div>
-
-<div class="card">
-<h2>🏋️ 今日运动</h2>
-<div id="workout"></div>
-<label><input class="task" type="checkbox"> 已完成</label>
-</div>
-
-<div class="card">
-<h2>💧 饮水</h2>
-<label><input class="task" type="checkbox"> 2L左右</label>
-</div>
-
-<div class="card">
-<h2>😊 今日一句话</h2>
-<textarea id="note" style="width:100%;height:80px"></textarea>
-</div>
-
-<div class="card">
-<button onclick="save()">保存</button>
+<h3>📊 本周汇总（演示版）</h3>
+<div id="week"></div>
 </div>
 
 <script>
-const plans=["力量","普拉提","有氧","普拉提","力量","徒步/拳击","恢复散步"];
+const list=["😴 睡眠7.5h","🌙 0:30前睡","🥚 两个鸡蛋","🥛 牛奶/酸奶","🍎 水果","💧 饮水2L","🧘 拉伸","🎥 视频练习"];
+const t=document.getElementById("tasks");
+list.forEach((x,i)=>{
+ let l=document.createElement("label");
+ l.innerHTML=`<input type=checkbox data-i="${i}"> ${x}`;
+ t.appendChild(l);
+});
 const d=new Date();
-document.getElementById("date").innerText=d.toLocaleDateString("zh-CN");
-document.getElementById("workout").innerText="今天："+plans[(d.getDay()+6)%7];
+document.getElementById("today").textContent=d.toLocaleDateString("zh-CN");
 const key="health-"+d.toISOString().slice(0,10);
-const tasks=[...document.querySelectorAll(".task")];
-function update(){
- let done=tasks.filter(t=>t.checked).length,total=tasks.length;
- let p=Math.round(done/total*100);
- document.getElementById("pct").innerText=p+"%";
- document.getElementById("prog").value=p;
-}
+let data=JSON.parse(localStorage.getItem(key)||"{}");
+if(data.sport) sport.value=data.sport;
+document.querySelectorAll("input").forEach((c,i)=>{
+ c.checked=data["c"+i]||false;
+ c.onchange=save;
+});
+sport.onchange=save;
 function save(){
- const data={c:tasks.map(t=>t.checked),n:note.value};
- localStorage.setItem(key,JSON.stringify(data));
- alert("已保存");
- update();
+ let done=0,total=document.querySelectorAll("input").length;
+ let obj={sport:sport.value};
+ document.querySelectorAll("input").forEach((c,i)=>{obj["c"+i]=c.checked;if(c.checked)done++;});
+ localStorage.setItem(key,JSON.stringify(obj));
+ let p=Math.round(done/total*100);
+ rate.textContent=p+"%";
+ drawCal();
+ week.innerHTML=`完成率：${p}%<br>今日运动：${sport.value}`;
 }
-const note=document.getElementById("note");
-const saved=localStorage.getItem(key);
-if(saved){
- const data=JSON.parse(saved);
- tasks.forEach((t,i)=>t.checked=!!data.c[i]);
- note.value=data.n||"";
+function drawCal(){
+ cal.innerHTML="";
+ const days=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+ for(let i=1;i<=days;i++){
+   let div=document.createElement("div");
+   div.className="day";
+   const k=`health-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(i).padStart(2,"0")}`;
+   let o=JSON.parse(localStorage.getItem(k)||"{}");
+   let cnt=0;
+   for(let j=0;j<8;j++) if(o["c"+j]) cnt++;
+   let pct=Math.round(cnt/8*100);
+   div.classList.add(pct<40?"low":pct<80?"mid":"high");
+   div.innerHTML=`<b>${i}</b><br>${o.sport||""}<br>${pct||0}%`;
+   cal.appendChild(div);
+ }
 }
-tasks.forEach(t=>t.onchange=update);
-note.oninput=()=>{};
-update();
+save();
 </script>
-</body>
-</html>
+</body></html>
