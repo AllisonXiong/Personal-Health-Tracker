@@ -1,84 +1,203 @@
 <!doctype html>
-<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Health Dashboard V2</title>
-<style>
-body{font-family:system-ui;background:#f3f6f1;margin:20px}
-.card{background:#fff;border-radius:12px;padding:16px;max-width:900px;margin:12px auto;box-shadow:0 2px 8px #0001}
-.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.day{border:1px solid #ddd;border-radius:8px;padding:6px;min-height:54px;font-size:12px}
-.low{background:#ffd9d9}.mid{background:#fff2b3}.high{background:#dff7d8}
-label{display:block;margin:4px 0}
-select{padding:6px}
-</style>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Personal Tracker</title>
+  <style>
+    :root{
+      --bg:#f6f7f8;
+      --card:#ffffff;
+      --muted:#65707a;
+      --accent:#0a84ff;
+      --glass:rgba(10,10,10,0.04);
+      --radius:14px;
+    }
+    /* Apple-like system fonts for Chinese & English */
+    body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",Roboto,Segoe UI,Arial,sans-serif;background:var(--bg);margin:24px;color:#0b1320}
+    .container{max-width:1100px;margin:0 auto}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:28px;margin:0;font-weight:600}
+    .layout{display:grid;grid-template-columns:2fr 1fr;gap:18px;align-items:start}
+    .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:0 6px 18px var(--glass);}
+    .modules{display:grid;grid-template-columns:1fr;gap:14px}
+    label{display:block;margin:6px 0;color:var(--muted)}
+    select,input[type=checkbox]{vertical-align:middle}
+    .small{font-size:13px;color:var(--muted)}
+    /* Calendar styles */
+    .calendar{display:flex;flex-direction:column;gap:10px}
+    .cal-header{display:flex;align-items:center;justify-content:space-between}
+    .cal-title{font-weight:600}
+    .cal-nav button{background:transparent;border:none;padding:8px 10px;border-radius:8px;color:var(--accent);cursor:pointer}
+    .weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;font-size:12px;color:var(--muted);text-align:center}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+    .cal-cell{background:linear-gradient(180deg,#fff, #fbfdff);border-radius:10px;padding:8px;min-height:62px;font-size:12px;border:1px solid #eef2f5}
+    .cal-cell .num{font-weight:600;color:#0b1320}
+    .cal-small{max-width:320px}
+    .meta{font-size:13px;color:var(--muted);margin-top:8px}
+    /* status colors */
+    .low{background:linear-gradient(180deg,#fff6f6,#fff0f0)}
+    .mid{background:linear-gradient(180deg,#fffdf6,#fff9ec)}
+    .high{background:linear-gradient(180deg,#f6fff6,#ecfff0)}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.cal-small{max-width:100%}}
+  </style>
+</head>
 <body>
-<div class="card">
-<h2>🌿 Health Dashboard V2</h2>
-<div id="today"></div>
-<label>今日运动：
-<select id="sport">
-<option>无</option><option>💪 力量</option><option>🩰 普拉提</option><option>❤️ 有氧</option>
-<option>🥊 拳击</option><option>🥾 徒步</option><option>🏃 跑步</option>
-<option>🚴 骑行</option><option>🏊 游泳</option><option>🧘 恢复</option>
-</select></label>
-<h3>今日打卡</h3>
-<div id="tasks"></div>
-<p>完成率：<b id="rate">0%</b></p>
-</div>
+<div class="container">
+  <header>
+    <h1>Personal Tracker</h1>
+    <div class="small">轻量 · 简洁 · 每日习惯记录</div>
+  </header>
 
-<div class="card">
-<h3>📅 本月日历（演示版）</h3>
-<div class="grid" id="cal"></div>
-</div>
+  <div class="layout">
+    <!-- Left: modules/cards -->
+    <div class="modules">
+      <div class="card">
+        <div class="meta" id="today"></div>
+        <label>今日运动：
+          <select id="sport">
+            <option>无</option>
+            <option>💪 力量</option>
+            <option>🩰 普拉提</option>
+            <option>❤️ 有氧</option>
+            <option>🥊 拳击</option>
+            <option>🥾 徒步</option>
+            <option>🏃 跑步</option>
+            <option>🚴 骑行</option>
+            <option>🏊 游泳</option>
+            <option>🧘 恢复</option>
+          </select>
+        </label>
+        <div class="meta">完成率：<b id="rate">0%</b></div>
+      </div>
 
-<div class="card">
-<h3>📊 本周汇总（演示版）</h3>
-<div id="week"></div>
+      <div class="card">
+        <h3 style="margin:0 0 8px 0">今日打卡 — 早/中/晚</h3>
+        <div id="modules-list"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px 0">本周汇总</h3>
+        <div id="week" class="small">—</div>
+      </div>
+    </div>
+
+    <!-- Right: calendar -->
+    <aside class="card cal-small">
+      <div class="calendar">
+        <div class="cal-header">
+          <div class="cal-title" id="cal-month">2023 年 8 月</div>
+          <div class="cal-nav">
+            <button id="prev">◀︎</button>
+            <button id="next">▶︎</button>
+          </div>
+        </div>
+        <div class="weekdays" id="weekdays"></div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </aside>
+  </div>
+  
 </div>
 
 <script>
-const list=["😴 睡眠7.5h","🌙 0:30前睡","🥚 两个鸡蛋","🥛 牛奶/酸奶","🍎 水果","💧 饮水2L","🧘 拉伸","🎥 视频练习"];
-const t=document.getElementById("tasks");
-list.forEach((x,i)=>{
- let l=document.createElement("label");
- l.innerHTML=`<input type=checkbox data-i="${i}"> ${x}`;
- t.appendChild(l);
+/* Data and modules */
+const tasks = [
+  {title:'早晨', items:["😴 睡眠7.5h","🌙 0:30前睡","🧘 拉伸"]},
+  {title:'白天', items:["🍎 水果","💧 饮水2L","🥚 两个鸡蛋","🥛 牛奶/酸奶"]},
+  {title:'晚上', items:["🎥 视频练习","🏃 跑步","🧘 恢复"]}
+];
+
+const modulesList = document.getElementById('modules-list');
+tasks.forEach((m,mi)=>{
+  const wrap=document.createElement('div');
+  wrap.style.marginBottom='8px';
+  const title=document.createElement('div');
+  title.textContent=m.title;title.style.fontWeight=600;title.style.marginBottom='6px';
+  wrap.appendChild(title);
+  m.items.forEach((it,i)=>{
+    const lab=document.createElement('label');
+    lab.innerHTML=`<input type="checkbox" data-mi="${mi}" data-i="${i}"> ${it}`;
+    wrap.appendChild(lab);
+  });
+  modulesList.appendChild(wrap);
 });
-const d=new Date();
-document.getElementById("today").textContent=d.toLocaleDateString("zh-CN");
-const key="health-"+d.toISOString().slice(0,10);
-let data=JSON.parse(localStorage.getItem(key)||"{}");
-if(data.sport) sport.value=data.sport;
-document.querySelectorAll("input").forEach((c,i)=>{
- c.checked=data["c"+i]||false;
- c.onchange=save;
-});
-sport.onchange=save;
-function save(){
- let done=0,total=document.querySelectorAll("input").length;
- let obj={sport:sport.value};
- document.querySelectorAll("input").forEach((c,i)=>{obj["c"+i]=c.checked;if(c.checked)done++;});
- localStorage.setItem(key,JSON.stringify(obj));
- let p=Math.round(done/total*100);
- rate.textContent=p+"%";
- drawCal();
- week.innerHTML=`完成率：${p}%<br>今日运动：${sport.value}`;
+
+/* Today and storage */
+const today = new Date();
+document.getElementById('today').textContent = today.toLocaleDateString('zh-CN');
+
+/* Restore sport */
+const sportSel = document.getElementById('sport');
+
+function saveDay(date){
+  const key = `health-${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  const obj = {sport: sportSel.value};
+  document.querySelectorAll('#modules-list input[type=checkbox]').forEach((c,i)=>{ obj['c'+i]=c.checked; });
+  localStorage.setItem(key, JSON.stringify(obj));
 }
-function drawCal(){
- cal.innerHTML="";
- const days=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
- for(let i=1;i<=days;i++){
-   let div=document.createElement("div");
-   div.className="day";
-   const k=`health-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(i).padStart(2,"0")}`;
-   let o=JSON.parse(localStorage.getItem(k)||"{}");
-   let cnt=0;
-   for(let j=0;j<8;j++) if(o["c"+j]) cnt++;
-   let pct=Math.round(cnt/8*100);
-   div.classList.add(pct<40?"low":pct<80?"mid":"high");
-   div.innerHTML=`<b>${i}</b><br>${o.sport||""}<br>${pct||0}%`;
-   cal.appendChild(div);
- }
+
+function loadDay(date){
+  const key = `health-${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  const obj = JSON.parse(localStorage.getItem(key)||'{}');
+  document.querySelectorAll('#modules-list input[type=checkbox]').forEach((c,i)=>{ c.checked = !!obj['c'+i]; });
+  if(obj.sport) sportSel.value = obj.sport;
+  updateSummary();
 }
-save();
+
+function updateSummary(){
+  const total = document.querySelectorAll('#modules-list input[type=checkbox]').length;
+  let done = 0; document.querySelectorAll('#modules-list input[type=checkbox]').forEach(c=>{ if(c.checked) done++; });
+  const p = Math.round(done/total*100);
+  document.getElementById('rate').textContent = p + '%';
+  document.getElementById('week').innerHTML = `完成率：${p}%<br>今日运动：${sportSel.value}`;
+}
+
+document.querySelectorAll('#modules-list input[type=checkbox]').forEach(c=>c.addEventListener('change', ()=>{ saveDay(today); updateSummary(); renderCalendar(viewDate); }));
+sportSel.addEventListener('change', ()=>{ saveDay(today); updateSummary(); renderCalendar(viewDate); });
+
+loadDay(today);
+
+/* Calendar with month navigation and weekday headers */
+const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+const weekdaysEl = document.getElementById('weekdays');
+weekdays.forEach(w=>{ const d = document.createElement('div'); d.textContent = w; weekdaysEl.appendChild(d); });
+
+let viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+const calTitle = document.getElementById('cal-month');
+const calGrid = document.getElementById('cal-grid');
+
+function renderCalendar(date){
+  calGrid.innerHTML = '';
+  calTitle.textContent = `${date.getFullYear()} 年 ${date.getMonth()+1} 月`;
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const startWeek = firstDay.getDay(); // 0..6
+  const days = new Date(date.getFullYear(), date.getMonth()+1, 0).getDate();
+  // fill blanks
+  for(let i=0;i<startWeek;i++){ const blank = document.createElement('div'); blank.className='cal-cell'; blank.style.background='transparent'; calGrid.appendChild(blank); }
+  for(let d=1; d<=days; d++){
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    const cellDate = new Date(date.getFullYear(), date.getMonth(), d);
+    const key = `health-${cellDate.getFullYear()}-${String(cellDate.getMonth()+1).padStart(2,'0')}-${String(cellDate.getDate()).padStart(2,'0')}`;
+    const obj = JSON.parse(localStorage.getItem(key)||'{}');
+    let cnt = 0; for(let j=0;j<9;j++) if(obj['c'+j]) cnt++;
+    const pct = Math.round((cnt/9||0)*100);
+    if(pct<40) cell.classList.add('low'); else if(pct<80) cell.classList.add('mid'); else cell.classList.add('high');
+    cell.innerHTML = `<div class="num">${d}</div><div class="small">${obj.sport||''}</div><div class="meta">${pct||0}%</div>`;
+    // highlight today
+    if(cellDate.toDateString() === new Date().toDateString()){
+      cell.style.boxShadow = 'inset 0 0 0 2px rgba(10,132,255,0.12), 0 6px 18px rgba(10,10,10,0.04)';
+    }
+    calGrid.appendChild(cell);
+  }
+}
+
+document.getElementById('prev').addEventListener('click', ()=>{ viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()-1,1); renderCalendar(viewDate); });
+document.getElementById('next').addEventListener('click', ()=>{ viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()+1,1); renderCalendar(viewDate); });
+
+renderCalendar(viewDate);
+
 </script>
-</body></html>
+</body>
+</html>
