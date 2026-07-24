@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health Dashboard</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f5f7f2;margin:0;padding:20px;color:#333}
+.card{background:#fff;border-radius:12px;padding:16px;margin:12px auto;max-width:720px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h1,h2{margin:.2em 0}
+label{display:block;padding:6px 0}
+progress{width:100%;height:18px}
+button{padding:10px 18px;border:0;border-radius:8px;background:#6fa36b;color:#fff;font-size:16px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>🌿 每日健康打卡</h1>
+<div id="date"></div>
+<p>完成率：<span id="pct">0%</span></p>
+<progress id="prog" max="100" value="0"></progress>
+</div>
+
+<div class="card">
+<h2>😴 睡眠</h2>
+<label><input class="task" type="checkbox"> 睡眠7.5小时+</label>
+<label><input class="task" type="checkbox"> 00:30前睡</label>
+</div>
+
+<div class="card">
+<h2>🍳 早餐</h2>
+<label><input class="task" type="checkbox"> 两个水煮蛋</label>
+<label><input class="task" type="checkbox"> 牛奶/酸奶</label>
+<label><input class="task" type="checkbox"> 水果</label>
+</div>
+
+<div class="card">
+<h2>🧘 小活动</h2>
+<label><input class="task" type="checkbox"> 早晨拉伸</label>
+<label><input class="task" type="checkbox"> 视频练习</label>
+</div>
+
+<div class="card">
+<h2>🏋️ 今日运动</h2>
+<div id="workout"></div>
+<label><input class="task" type="checkbox"> 已完成</label>
+</div>
+
+<div class="card">
+<h2>💧 饮水</h2>
+<label><input class="task" type="checkbox"> 2L左右</label>
+</div>
+
+<div class="card">
+<h2>😊 今日一句话</h2>
+<textarea id="note" style="width:100%;height:80px"></textarea>
+</div>
+
+<div class="card">
+<button onclick="save()">保存</button>
+</div>
+
+<script>
+const plans=["力量","普拉提","有氧","普拉提","力量","徒步/拳击","恢复散步"];
+const d=new Date();
+document.getElementById("date").innerText=d.toLocaleDateString("zh-CN");
+document.getElementById("workout").innerText="今天："+plans[(d.getDay()+6)%7];
+const key="health-"+d.toISOString().slice(0,10);
+const tasks=[...document.querySelectorAll(".task")];
+function update(){
+ let done=tasks.filter(t=>t.checked).length,total=tasks.length;
+ let p=Math.round(done/total*100);
+ document.getElementById("pct").innerText=p+"%";
+ document.getElementById("prog").value=p;
+}
+function save(){
+ const data={c:tasks.map(t=>t.checked),n:note.value};
+ localStorage.setItem(key,JSON.stringify(data));
+ alert("已保存");
+ update();
+}
+const note=document.getElementById("note");
+const saved=localStorage.getItem(key);
+if(saved){
+ const data=JSON.parse(saved);
+ tasks.forEach((t,i)=>t.checked=!!data.c[i]);
+ note.value=data.n||"";
+}
+tasks.forEach(t=>t.onchange=update);
+note.oninput=()=>{};
+update();
+</script>
+</body>
+</html>
